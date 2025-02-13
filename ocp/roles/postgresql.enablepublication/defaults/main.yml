@@ -1,0 +1,6 @@
+---
+project: "postgresql"
+postgresql_application_name: "postgresql"
+postgresql:
+  database: "dbuser"
+  user: "dbuser"

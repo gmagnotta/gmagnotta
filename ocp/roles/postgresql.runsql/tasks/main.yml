@@ -1,0 +1,34 @@
+---
+- name: Search for postgresql pod
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ project }}"
+    label_selectors:
+      - "app = {{ postgresql_application_name }}"
+  register: pod_list
+  until: pod_list.resources[0].status.phase == "Running"
+  retries: 10
+  delay: 15
+
+- name: show pod name
+  debug:
+    msg: "Found postgresql pod: {{ pod_list.resources[0].metadata.name }}"
+
+- name: Copy file
+  kubernetes.core.k8s_cp:
+    namespace:  "{{ project }}"
+    pod: "{{ pod_list.resources[0].metadata.name }}"
+    remote_path: /tmp/myfile.sql
+    local_path: "{{ postgresql_file }}"
+
+- name: Run file
+  kubernetes.core.k8s_exec:
+    namespace: "{{ project }}"
+    pod: "{{ pod_list.resources[0].metadata.name }}"
+    command: "/usr/bin/psql -U {{ postgresql.user }} -d {{ postgresql.database }} -f /tmp/myfile.sql"
+
+- name: Delete file
+  kubernetes.core.k8s_exec:
+    namespace: "{{ project }}"
+    pod: "{{ pod_list.resources[0].metadata.name }}"
+    command: "rm /tmp/myfile.sql"
